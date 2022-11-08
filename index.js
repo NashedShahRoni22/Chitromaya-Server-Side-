@@ -21,27 +21,35 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const servicefCollection = client.db("chitromayaDb").collection("services");
-    //data limit 3
+    const servicesCollection = client.db("chitromayaDb").collection("services");
+    const reviewsCollection = client.db("chitromayaDb").collection("reviews");
+    //data load limit 3 api
     app.get("/servicesThree", async (req, res) => {
       const query = {};
-      const cursor = servicefCollection.find(query);
+      const cursor = servicesCollection.find(query);
       const services = await cursor.limit(3).toArray();
       res.send(services);
     });
-    //no limit of loading data
+    //no limit of service data load api
     app.get("/services", async (req, res) => {
         const query = {};
-        const cursor = servicefCollection.find(query);
+        const cursor = servicesCollection.find(query);
         const services = await cursor.toArray();
         res.send(services);
     });
-    //service details
+    //service details api
     app.get("/services/:id", async(req, res) =>{
         id = req.params.id;
         const query = {_id: ObjectId(id)};
-        const serviceDetails = await servicefCollection.findOne(query);
+        const serviceDetails = await servicesCollection.findOne(query);
         res.send(serviceDetails);
+    })
+
+    //reviews api
+    app.post("/reviews", async(req, res)=>{
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
+      res.send(result);
     })
   } finally {
   }
