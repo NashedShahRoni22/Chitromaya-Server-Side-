@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken")
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -23,6 +24,22 @@ async function run() {
   try {
     const servicesCollection = client.db("chitromayaDb").collection("services");
     const reviewsCollection = client.db("chitromayaDb").collection("reviews");
+    //jwt token function
+    function verifyJWT(req, res, next) {
+      const authHeader = req.headers.authorization;
+      if(!authHeader){
+        return res.status(401).send({message:'unauthorized access'})
+      }
+      const token = authHeader.split(' ')[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
+        if(err){
+          return res.status(403).send({message:'user forbidden from access'})
+        }
+        req.decoded = decoded;
+        next();
+      })
+    }
+    
     //data load limit 3 api
     app.get("/servicesThree", async (req, res) => {
       const query = {};
@@ -73,7 +90,12 @@ async function run() {
     })
     
     //reviews get api
-    app.get("/userReviews", async(req,res)=>{
+    app.get("/userReviews", verifyJWT, async(req,res)=>{
+      const decoded = req.decoded;
+      if(decoded.email !== req.query.userEmail){
+        return res.status(401).send({message:'unauthorized access'})
+      }
+
       let query = {};
       if(req.query.userEmail){
         query = {
@@ -83,6 +105,26 @@ async function run() {
       const cursor = reviewsCollection.find(query); 
       const userreviews = await cursor.toArray();
       res.send(userreviews);
+    })
+    //update reviews api
+    // app.patch("/userReviews/:id", async(req, res)=>{
+    //   const id = req.params.id;
+    //   const reviewTxt = req.body.reviewTxt;
+    //   const query={_id:ObjectId(id)};
+    //   const updatedDoc ={
+    //     $set:{
+    //       reviewTxt:reviewTxt
+    //     }
+    //   }
+    //   const result = await reviewsCollection.updateOne(query, updatedDoc);
+    //   res.send(result);
+    // })
+
+    //jwt api
+    app.post('/jwt',(req, res)=>{
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,{expiresIn: '10h'});
+      res.send({token});
     })
   } finally {
   }
