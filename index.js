@@ -56,7 +56,7 @@ async function run() {
     });
     //service details api
     app.get("/services/:id", async(req, res) =>{
-        id = req.params.id;
+        const id = req.params.id;
         const query = {_id: ObjectId(id)};
         const serviceDetails = await servicesCollection.findOne(query);
         res.send(serviceDetails);
